@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Walk Into Van Gogh</title>
+<link rel="icon" href="data:,">
+<meta name="description" content="Walk into three of Van Gogh’s paintings and see the half he never painted. Worlds generated with Viggle JST 2.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Noto+Serif+SC:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root { --ink: #f7f1e3; --gold: #e8c26a; --shade: rgba(12, 14, 28, .55); }
+  html, body { margin: 0; height: 100%; background: #0b0d18; overflow: hidden; color: var(--ink);
+    font-family: "Cormorant Garamond", "Noto Serif SC", Georgia, serif; }
+  canvas { width: 100%; height: 100%; display: block; }
+  .layer { position: fixed; inset: 0; pointer-events: none; }
+  #painting { background: #0b0d18 center / contain no-repeat; opacity: 0; transition: opacity 1.8s ease, transform 2.4s ease; }
+  #fade { background: #fbf6ea; opacity: 1; transition: opacity 1.2s ease; }
+  #fade.dark { background: #0b0d18; }
+  #title { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+    opacity: 0; transition: opacity 1.4s ease; text-shadow: 0 2px 18px rgba(0,0,0,.6); }
+  #title h1 { font-size: clamp(34px, 6vw, 72px); font-weight: 500; letter-spacing: .04em; margin: 0; }
+  #title p { font-size: clamp(16px, 2vw, 22px); font-style: italic; margin: .4em 0 0; color: var(--gold); letter-spacing: .12em; }
+  #quote { top: auto; bottom: 7vh; left: 50%; right: auto; transform: translateX(-50%); width: min(880px, 88vw);
+    text-align: center; opacity: 0; transition: opacity 1.4s ease; text-shadow: 0 2px 14px rgba(0,0,0,.85); }
+  #quote .en { font-size: clamp(19px, 2.3vw, 28px); font-style: italic; line-height: 1.35; }
+  #quote .zh { font-family: "Noto Serif SC", serif; font-size: clamp(14px, 1.6vw, 19px); margin-top: .45em; opacity: .92; }
+  #quote .src { font-size: clamp(12px, 1.2vw, 15px); margin-top: .6em; color: var(--gold); letter-spacing: .08em; }
+  #goal { top: 22px; left: 26px; right: auto; bottom: auto; padding: 10px 16px; background: var(--shade);
+    border-left: 2px solid var(--gold); font-size: 19px; opacity: 0; transition: opacity .8s ease; max-width: 70vw; }
+  #goal .zh { font-family: "Noto Serif SC", serif; font-size: 14px; opacity: .85; }
+  #hint { top: auto; bottom: 18px; left: auto; right: 22px; font-size: 13px; opacity: .55; font-family: system-ui, sans-serif; }
+  #end { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+    background: #0b0d18; opacity: 0; transition: opacity 2.4s ease; padding: 0 8vw; }
+  #end .en { font-size: clamp(22px, 3vw, 38px); font-style: italic; line-height: 1.35; max-width: 900px; }
+  #end .zh { font-family: "Noto Serif SC", serif; font-size: clamp(15px, 1.7vw, 20px); margin-top: .6em; opacity: .9; }
+  #end .src { color: var(--gold); margin-top: .8em; letter-spacing: .08em; }
+  #end .name { margin-top: 2.6em; font-size: clamp(26px, 3.4vw, 44px); letter-spacing: .06em; }
+  #end .credit { margin-top: 1.4em; font-family: system-ui, sans-serif; font-size: 13px; opacity: .55; letter-spacing: .06em; }
+  #loading { display: flex; align-items: center; justify-content: center; font-size: 22px; font-style: italic; color: #4a4434; }
+  body.clean #goal, body.clean #hint { display: none; }
+  body.lang-en .zh, body.lang-zh .en { display: none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="painting" class="layer"></div>
+<div id="title" class="layer"><h1></h1><p></p></div>
+<div id="quote" class="layer"><div class="en"></div><div class="zh"></div><div class="src"></div></div>
+<div id="goal" class="layer"><div class="en"></div><div class="zh"></div></div>
+<div id="hint" class="layer">WASD move · Space jump · click + mouse to look</div>
+<div id="end" class="layer"><div class="en"></div><div class="zh"></div><div class="src"></div><div class="name">Vincent van Gogh · 1853–1890</div><div class="credit">Worlds generated with Viggle JST 2 · built with Claude Code + PINOC MCP</div></div>
+<div id="fade" class="layer"><div id="loading" class="layer">…</div></div>
+<script type="module" src="/src/game.js"></script>
+</body>
+</html>

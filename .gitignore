@@ -1,0 +1,6 @@
+node_modules/
+dist/
+recordings/
+test/shots/
+tools/.cache/
+.DS_Store
