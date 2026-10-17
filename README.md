@@ -1,6 +1,6 @@
 # Walk Into Van Gogh
 
-**Play:** _link coming soon_
+**Play:** https://yuwen-cool.github.io/walk-into-van-gogh/ (desktop browser, keyboard + mouse)
 
 Three of Vincent van Gogh's paintings, turned into worlds you can walk into. Turn around and you see the half of the room, the street and the field that he never painted.
 
@@ -47,6 +47,8 @@ npm run test:flow               # headless Chrome plays all three levels
 ---
 
 ## 中文说明
+
+试玩：https://yuwen-cool.github.io/walk-into-van-gogh/ （电脑浏览器，键盘加鼠标）
 
 把梵高的三幅画变成可以走进去的世界。转身就能看到他从来没画过的那一半：卧室的另一面墙、咖啡馆身后的半条街、麦田小路的来处。
 
