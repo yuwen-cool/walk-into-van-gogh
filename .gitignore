@@ -4,3 +4,4 @@ recordings/
 test/shots/
 tools/.cache/
 .DS_Store
+dist-film/

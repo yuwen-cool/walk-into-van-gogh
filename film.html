@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>Walk Into Van Gogh · film</title>
+<link rel="icon" href="data:,">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root { --ink: #f6efdc; --gold: #e8c26a; }
+  html, body { margin: 0; height: 100%; background: #05060c; overflow: hidden; color: var(--ink); }
+  canvas { width: 100%; height: 100%; display: block; }
+  .layer { position: fixed; inset: 0; pointer-events: none; }
+  #painting { background: #05060c center / contain no-repeat; opacity: 0; transform-origin: 50% 50%; }
+  #black { background: #05060c; opacity: 0; }
+  #cap { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 9vh; text-align: center;
+    text-shadow: 0 2px 22px rgba(0,0,0,.9), 0 0 2px rgba(0,0,0,.6); opacity: 0; }
+  #cap .zh { font-family: "Noto Serif SC", serif; font-weight: 500; font-size: 3.0vw; letter-spacing: .12em; }
+  #cap .en { font-family: "Cormorant Garamond", serif; font-style: italic; font-size: 1.7vw; margin-top: .5em; opacity: .85; letter-spacing: .03em; }
+  #cap.small .zh { font-size: 1.9vw; letter-spacing: .3em; color: var(--gold); }
+  #cap.small .en { font-size: 1.35vw; }
+  .card { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; opacity: 0; }
+  #title .zh { font-family: "Noto Serif SC", serif; font-weight: 700; font-size: 6.2vw; letter-spacing: .35em; margin-right: -.35em; }
+  #title .en { font-family: "Cormorant Garamond", serif; font-size: 2.2vw; letter-spacing: .5em; margin-top: 1.2vw; color: var(--gold); }
+  #title .sub { font-family: "Noto Serif SC", serif; font-size: 1.5vw; letter-spacing: .3em; margin-top: 2.6vw; opacity: .8; }
+  #how { justify-content: space-between; padding: 6vh 0 7vh; text-shadow: 0 2px 18px rgba(0,0,0,.95); }
+  #how .top { font-family: "Noto Serif SC", serif; font-weight: 700; font-size: 3.2vw; letter-spacing: .1em; }
+  #how .top b { color: var(--gold); font-weight: 700; }
+  #how .bot { font-family: system-ui, sans-serif; font-size: 1.25vw; letter-spacing: .2em; opacity: .85; }
+  #end { padding: 0 10vw; }
+  #end .q { font-family: "Noto Serif SC", serif; font-size: 2.8vw; line-height: 1.6; letter-spacing: .08em; }
+  #end .qen { font-family: "Cormorant Garamond", serif; font-style: italic; font-size: 1.8vw; margin-top: 1vw; opacity: .8; }
+  #end .src { font-family: "Noto Serif SC", serif; font-size: 1.15vw; color: var(--gold); margin-top: 1.4vw; letter-spacing: .15em; }
+  #end .l2 { margin-top: 5vw; opacity: 0; }
+  #end .l2 .call { font-family: "Noto Serif SC", serif; font-size: 2.2vw; letter-spacing: .15em; }
+  #end .l2 .link { font-family: system-ui, sans-serif; font-size: 1.15vw; letter-spacing: .12em; margin-top: 1.2vw; opacity: .7; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="painting" class="layer"></div>
+<div id="black" class="layer"></div>
+<div id="cap" class="layer"><div class="zh"></div><div class="en"></div></div>
+<div id="title" class="layer card">
+  <div class="zh">走进梵高</div>
+  <div class="en">WALK INTO VAN GOGH</div>
+  <div class="sub">四幅画，和他没画完的另一半</div>
+</div>
+<div id="how" class="layer card">
+  <div class="top">一张画 · <b>一分钟</b> · 一个能走进去的世界</div>
+  <div class="bot">VIGGLE JST 2 · PINOC MCP · CLAUDE CODE</div>
+</div>
+<div id="end" class="layer card">
+  <div class="q">“我几乎相信，这些画会替我说出<br>那些我说不出口的话。”</div>
+  <div class="qen">I’d almost believe that these canvases will tell you what I can’t say in words.</div>
+  <div class="src">致提奥与乔 · 1890 年 7 月 · 离他去世不到三周</div>
+  <div class="l2">
+    <div class="call">现在，你可以转过身，看看他没画的那一半。</div>
+    <div class="link">yuwen-cool.github.io/walk-into-van-gogh</div>
+  </div>
+</div>
+<script type="module" src="/src/film.js"></script>
+</body>
+</html>

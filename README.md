@@ -2,25 +2,30 @@
 
 **Play:** https://yuwen-cool.github.io/walk-into-van-gogh/ (desktop browser, keyboard + mouse)
 
-Three of Vincent van Gogh's paintings, turned into worlds you can walk into. Turn around and you see the half of the room, the street and the field that he never painted.
+Four of Vincent van Gogh's paintings, turned into worlds you can walk into. Every painting shows only what was in front of him. Turn around, and you see the half he never painted.
 
-| Level | You do |
+| Painting | |
 |---|---|
-| The Bedroom · Arles, 1888 | Find his straw hat, hanging behind where he stood |
-| Café Terrace at Night · Arles, 1888 | Gather three fallen stars in the half of the street he never painted |
+| The Starry Night · Saint-Rémy, June 1889 | The swirls overhead actually turn |
+| Café Terrace at Night · Arles, September 1888 | Behind him: a lamplit street under the stars |
+| Starry Night Over the Rhône · Arles, 1888 | Seen through his own eyes, the town on the bank behind |
 | Wheatfield with Crows · Auvers-sur-Oise, July 1890 | Walk toward the horizon |
 
-WASD to walk · Space to jump · click, then move the mouse to look.
+WASD to walk · click, then move the mouse to look · turn around to find the next painting.
 
 ## How it was made
 
 No modelling, no rigging, no Blender.
 
-1. **Worlds:** each painting went into [Viggle JST 2](https://viggle.ai/pinoc/app) through the PINOC MCP (`generate_environment`). One image, about a minute, 5–11 credits. JST 2 builds real 3D Gaussian splats, so the back of the room is there when you turn around.
-2. **Vincent:** `generate_character` from one sentence, already rigged. Walk, idle and pick-up motions come from the free PINOC motion library.
-3. **Game:** built with Claude Code on top of [`@viggle/splat-engine`](https://www.npmjs.com/package/@viggle/splat-engine). Walls and furniture are worked out from the splat point cloud itself (`tools/prep-scene.py`), so there are no hand-placed colliders.
+1. **Worlds (Viggle JST 2):** each painting went to `generate_environment` through the PINOC MCP, together with a short art-direction prompt and `quality: "high"`. One image, about a minute, 5–11 credits. JST 2 builds real 3D Gaussian splats, so the other half is there when you turn around.
+2. **Vincent (Viggle JST 2):** `generate_character` from one sentence, already rigged; walk and idle come from the free PINOC motion library.
+3. **Code (Claude Code):** everything that moves or glows is code layered on top of the splats.
+   - `src/living.js` rewrites the splat shader so every brushstroke drifts along its own direction, the Starry Night vortices spin and the wheat sways.
+   - `src/paint.js` stretches Vincent's splats into strokes and breaks up his colours, so he looks painted rather than pasted in.
+   - `src/fx.js` adds dust, lamp sparks, glints on the water and wheat chaff.
+   - Walls and furniture are worked out from the point cloud itself (`tools/prep-scene.py`); there are no hand-placed colliders.
 
-The whole project used 146 PINOC credits, test scenes included.
+`film.html` + `test/render-film.mjs` render the 60-second film frame by frame (4K supersampled down to 1080p).
 
 ## Make your own
 
@@ -34,7 +39,7 @@ Add a painting as a new level: connect the PINOC MCP to Claude Code (or Cursor /
 ```bash
 claude mcp add --scope user --transport http pinoc https://pinoc.mcp.viggle.ai/mcp
 python3 tools/prep-scene.py "<splatUrl>" --id my-painting
-npm run test:flow               # headless Chrome plays all three levels
+npm run test:flow               # headless Chrome plays all four paintings
 ```
 
 ## Credits
@@ -50,8 +55,10 @@ npm run test:flow               # headless Chrome plays all three levels
 
 试玩：https://yuwen-cool.github.io/walk-into-van-gogh/ （电脑浏览器，键盘加鼠标）
 
-把梵高的三幅画变成可以走进去的世界。转身就能看到他从来没画过的那一半：卧室的另一面墙、咖啡馆身后的半条街、麦田小路的来处。
+梵高每一幅画，都只画了眼前的那一半。这里把他的四幅画变成可以走进去的世界，转过身，就能看到他从来没画过的另一半：《星月夜》头顶的漩涡在转，咖啡馆身后是亮着路灯的星空街道，罗纳河对岸的小镇亮着窗，最后是 1890 年 7 月的麦田。
 
-**怎么做的：** 每幅画丢给 Viggle JST 2（通过 PINOC MCP），一张图一分钟出一个真 3D 的高斯泼溅场景；梵高角色一句话生成，自带骨骼，动作用免费动作库；游戏用 Claude Code 写，碰撞直接从点云算，不用建模、不用绑骨、不用 Blender。
+**怎么做的：**
+- **世界和角色（Viggle JST 2）：** 每幅画加一句美术方向描述，通过 PINOC MCP 一分钟生成一个真 3D 的高斯泼溅世界；梵高一句话生成，自带骨骼，动作用免费动作库。
+- **代码（Claude Code）：** 改泼溅着色器让笔触流动、漩涡旋转、麦浪起伏；给梵高加油画质感；加光尘、灯火、水面光点；碰撞直接从点云算。
 
-**自己做一个：** 让你的 agent 读 [`CLAUDE.md`](CLAUDE.md)，里面有从“一张画”到“一关游戏”的完整流程和我们踩过的所有坑。
+**自己做一个：** 让你的 agent 读 [`CLAUDE.md`](CLAUDE.md)，里面有从“一张画”到“一关”的完整流程和我们踩过的所有坑。

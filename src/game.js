@@ -1,12 +1,18 @@
 import * as pc from 'playcanvas';
 import { Scene, Character, Animation, Environment, Keyboard, WasdController, ThirdPersonCamera } from '@viggle/splat-engine';
-import { LEVELS, ENDING } from './levels.js';
+import { LEVELS, ENDING, TURN_GOAL, REVEAL, NEXT_GOAL, HORIZON_GOAL } from './levels.js';
+import { makeLiving } from './living.js';
+import { paintCharacter } from './paint.js';
+import { makeParticles } from './fx.js';
 
 const q = new URLSearchParams(location.search);
 const $ = (s) => document.querySelector(s);
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
 const lerp = (a, b, t) => a + (b - a) * t;
+const rad = (d) => d * Math.PI / 180;
+// yaw 方向上的水平单位向量（与相机 setEulerAngles 的 yaw 一致，0 = 朝 -Z）
+const dir = (yawDeg) => [-Math.sin(rad(yawDeg)), -Math.cos(rad(yawDeg))];
 let EYE = 1.5; // 场景原点就是画家的眼睛；每关按 -ground*scale 重新算
 
 if (q.get('lang')) document.body.classList.add('lang-' + q.get('lang'));
@@ -19,9 +25,33 @@ scene.start();
 const app = scene.app;
 const camEntity = scene.cameraEntity;
 
+// ---------- 后期：锐化、调色、局部对比、泛光、暗角（?fx=0 关闭，用于对比） ----------
+if (q.get('fx') !== '0') {
+  const cf = scene.getOrCreateCameraFrame();
+  cf.rendering.sharpness = Number(q.get('sharp') ?? 0.8);
+  cf.grading.enabled = true;
+  cf.grading.contrast = Number(q.get('contrast') ?? 1.18);
+  cf.grading.saturation = Number(q.get('sat') ?? 0.88);
+  cf.grading.brightness = 1.0;
+  cf.colorEnhance.enabled = true;
+  cf.colorEnhance.dehaze = Number(q.get('dehaze') ?? 0.25);
+  cf.colorEnhance.shadows = -0.15;
+  cf.colorEnhance.highlights = 0.15;
+  cf.colorEnhance.vibrance = 0;
+  cf.colorEnhance.midtones = 0;
+  cf.bloom.intensity = Number(q.get('bloom') ?? 0.035);
+  cf.bloom.blurLevel = 14;
+  cf.vignette.intensity = Number(q.get('vig') ?? 0.5);
+  cf.vignette.inner = 0.45;
+  cf.vignette.outer = 1.15;
+  cf.vignette.curvature = 0.6;
+  cf.update();
+}
+
 const character = await Character.load(scene, 'characters/vangogh.vsplat', { position: { x: 0, y: 0, z: 0 } });
-await Promise.all(['idle', 'walk', 'run', 'jump', 'wave', 'cheer', 'pickup', 'point'].map((n) => Animation.loadGlb(scene, `motions/${n}.glb`, n)));
+await Promise.all(['idle', 'walk', 'run', 'jump'].map((n) => Animation.loadGlb(scene, `motions/${n}.glb`, n)));
 character.playAnimation('idle', { loop: true });
+if (q.get('paint') !== '0') paintCharacter(character);
 character.setActive(false);
 
 const keyboard = new Keyboard();
@@ -57,22 +87,6 @@ function glowMaterial(color, opacity = 1, additive = true) {
   m.update();
   return m;
 }
-function makeOrb(pos, kind) {
-  const root = new pc.Entity('item');
-  root.setPosition(...pos);
-  const warm = kind === 'star' ? [1, 0.86, 0.35] : [1, 0.78, 0.4];
-  const core = new pc.Entity();
-  core.addComponent('render', { type: 'sphere', material: glowMaterial(warm, 1), castShadows: false });
-  core.setLocalScale(0.1, 0.1, 0.1);
-  const halo = new pc.Entity();
-  halo.addComponent('render', { type: 'sphere', material: glowMaterial(warm, 0.16), castShadows: false });
-  halo.setLocalScale(0.36, 0.36, 0.36);
-  root.addChild(core);
-  root.addChild(halo);
-  scene.contentRoot.addChild(root);
-  return { root, core, halo, base: pos.slice(), t: Math.random() * 6 };
-}
-
 async function loadTexture(url) {
   const img = await createImageBitmap(await (await fetch(url)).blob());
   const tex = new pc.Texture(app.graphicsDevice, { width: img.width, height: img.height, format: pc.PIXELFORMAT_RGBA8, mipmaps: true });
@@ -135,7 +149,7 @@ async function crowMaterial() {
   g.strokeStyle = '#141a33';
   g.lineCap = 'round';
   g.lineJoin = 'round';
-  g.lineWidth = 15;
+  g.lineWidth = 26;
   g.beginPath();
   g.moveTo(18, 84);
   g.quadraticCurveTo(70, 26, 128, 76);
@@ -164,10 +178,10 @@ async function spawnCrows(center) {
     wing.addComponent('render', { type: 'plane', material: mat, castShadows: false });
     wing.setLocalEulerAngles(90, 0, 0);
     e.addChild(wing);
-    const size = 0.35 + Math.random() * 0.25;
-    e.setPosition(center[0] + (Math.random() - 0.5) * 3.5, 0.4 + Math.random() * 0.5, center[2] + (Math.random() - 0.5) * 1.6);
+    const size = 0.5 + Math.random() * 0.4;
+    e.setPosition(center[0] + (Math.random() - 0.5) * 5, 1.3 + Math.random() * 0.9, center[2] - Math.random() * 1.5);
     scene.contentRoot.addChild(e);
-    list.push({ e, wing, size, v: new pc.Vec3((Math.random() - 0.5) * 1.0, 0.3 + Math.random() * 0.35, -0.7 - Math.random() * 0.7), ph: Math.random() * 6 });
+    list.push({ e, wing, size, v: new pc.Vec3((Math.random() - 0.5) * 1.0, 0.25 + Math.random() * 0.3, -0.3 - Math.random() * 0.5), ph: Math.random() * 6 });
   }
   return list;
 }
@@ -182,15 +196,40 @@ function setText(sel, obj) {
 }
 const show = (sel, on) => { $(sel).style.opacity = on ? 1 : 0; };
 
+// ---------- 第一人称（罗纳河这类“看”的画） ----------
+const fp = { x: 0, z: 0, yaw: 0, pitch: 0 };
+canvas.addEventListener('click', () => { if (camMode === 'fp' && document.pointerLockElement !== canvas) canvas.requestPointerLock?.(); });
+window.addEventListener('mousemove', (e) => {
+  if (camMode !== 'fp' || document.pointerLockElement !== canvas) return;
+  fp.yaw -= e.movementX * 0.15;
+  fp.pitch = Math.max(-60, Math.min(70, fp.pitch - e.movementY * 0.15));
+});
+function updateFp(dt) {
+  const f = dir(fp.yaw), r = [-f[1], f[0]];
+  let mx = 0, mz = 0;
+  if (keyboard.isKeyDown('KeyW')) { mx += f[0]; mz += f[1]; }
+  if (keyboard.isKeyDown('KeyS')) { mx -= f[0]; mz -= f[1]; }
+  if (keyboard.isKeyDown('KeyD')) { mx -= r[0]; mz -= r[1]; }
+  if (keyboard.isKeyDown('KeyA')) { mx += r[0]; mz += r[1]; }
+  const len = Math.hypot(mx, mz);
+  if (len > 0) {
+    const nx = fp.x + mx / len * 1.2 * dt, nz = fp.z + mz / len * 1.2 * dt;
+    if (walkable(nx, nz)) { fp.x = nx; fp.z = nz; }
+  }
+  camEntity.setPosition(fp.x, EYE, fp.z);
+  camEntity.setEulerAngles(fp.pitch, fp.yaw, 0);
+}
+
 // ---------- 关卡流程 ----------
-let level = null, env = null, items = [], portal = null, birds = [], busy = false, collected = 0;
+let level = null, env = null, living = null, sparks = null, portal = null, birds = [], busy = false;
+let turned = false, clock = 0;
 
 async function loadLevel(cfg) {
   if (env) env.destroy();
-  for (const it of items) it.root.destroy();
   if (portal) portal.root.destroy();
   for (const b of birds) b.e.destroy();
-  items = []; portal = null; birds = []; collected = 0;
+  if (sparks) sparks.update(false, 0, camEntity);
+  portal = null; birds = []; turned = false;
   level = cfg;
   EYE = -cfg.ground * cfg.scale;
   grid = await (await fetch(cfg.grid)).json();
@@ -198,22 +237,21 @@ async function loadLevel(cfg) {
     position: { x: 0, y: -cfg.ground * cfg.scale, z: 0 },
     scale: cfg.scale,
   });
-  items = cfg.items.filter((it) => it.kind !== 'horizon').map((it) => Object.assign(makeOrb(it.pos, it.kind), { cfg: it }));
-  if (cfg.portal) {
-    const next = LEVELS.find((l) => l.id === cfg.portal.next);
-    portal = await makePortal(cfg.portal, next);
-  }
+  living = makeLiving(env, { eye: EYE, scale: cfg.scale, flow: cfg.living?.flow ?? 0.2, vortices: cfg.living?.vortices || [], wave: cfg.living?.wave || 0 });
+  sparks = cfg.particles && q.get('fx') !== '0' ? (sparkCache[cfg.id] ||= makeParticles(scene, cfg.particles)) : null;
 }
+const sparkCache = {};
 
 // 画 → 空间 → 角色登场
 async function intro(cfg) {
   camMode = 'manual';
   controlsOn = false;
   character.setActive(false);
+  const y0 = cfg.yaw0 ?? 0, yi = cfg.introYaw ?? y0;
   const fov0 = cfg.introFov ?? 85;
   camEntity.camera.fov = fov0;
   camEntity.setPosition(0, EYE, 0);
-  camEntity.setEulerAngles(0, 0, 0);
+  camEntity.setEulerAngles(0, yi, 0);
   const paint = $('#painting');
   paint.style.backgroundImage = `url(${cfg.painting})`;
   paint.style.transition = 'none';
@@ -230,19 +268,32 @@ async function intro(cfg) {
   $('#title h1').textContent = cfg.title.en;
   $('#title p').textContent = cfg.title.place;
   show('#title', true);
-  const push = cfg.push ?? 1.0;
+  const push = cfg.push ?? 1.0, d = dir(y0);
   await tween(2600, (t) => {
     const k = ease(t);
-    camEntity.setPosition(0, EYE + 0.05 * k, -push * k);
+    camEntity.setPosition(d[0] * push * k, EYE + 0.05 * k, d[1] * push * k);
+    camEntity.setEulerAngles(0, lerp(yi, y0, k), 0);
     camEntity.camera.fov = lerp(fov0, 55, k);
   });
   show('#title', false);
+  if (cfg.firstPerson) {
+    fp.x = d[0] * push; fp.z = d[1] * push; fp.yaw = y0; fp.pitch = 0;
+    camMode = 'fp';
+    cam.inputEnabled = false;
+    controlsOn = true;
+    setText('#quote', cfg.quote); show('#quote', true);
+    setText('#goal', cfg.next ? TURN_GOAL : HORIZON_GOAL); show('#goal', true);
+    setTimeout(() => show('#quote', false), 7000);
+    return;
+  }
+  cam.inputEnabled = true;
   // 镜头从画家眼睛的位置往后拉，梵高出现在画里
-  character.setPosition(0, 0, -push - 1.0);
-  character.setRotation(0, 0, 0);
+  character.setPosition(d[0] * (push + 1.0), 0, d[1] * (push + 1.0));
+  character.setRotation(0, y0, 0);
   character.setActive(true);
   character.playAnimation('idle', { loop: true });
-  cam.yaw = 0; cam.pitch = 2; cam.height = 1.55; cam.distance = 1.0;
+  ctrl._facingYaw = y0;
+  cam.yaw = y0; cam.pitch = 2; cam.height = 1.55; cam.distance = 1.0;
   camMode = 'cine';
   await tween(1800, (t) => {
     const k = ease(t);
@@ -255,7 +306,7 @@ async function intro(cfg) {
   controlsOn = true;
   setText('#quote', cfg.quote);
   show('#quote', true);
-  setText('#goal', cfg.goal);
+  setText('#goal', cfg.next ? TURN_GOAL : HORIZON_GOAL);
   show('#goal', true);
   setTimeout(() => show('#quote', false), 7000);
 }
@@ -272,34 +323,22 @@ function tween(ms, fn) {
   });
 }
 
-async function playAction(name, ms) {
-  controlsOn = false;
-  character.crossfadeTo(name, { duration: 0.2, loop: false });
-  await wait(ms);
-  character.crossfadeTo('idle', { duration: 0.3, loop: true });
-  ctrl._currentAnim = 'idle';
-  controlsOn = true;
-}
-
-async function onCollect(it) {
-  busy = true;
-  const kind = it.cfg.kind;
-  tween(500, (t) => {
-    const s = 1 + 2.5 * t;
-    it.halo.setLocalScale(0.36 * s, 0.36 * s, 0.36 * s);
-    it.core.setLocalScale(0.1 * (1 - t), 0.1 * (1 - t), 0.1 * (1 - t));
-  }).then(() => it.root.destroy());
-  items = items.filter((x) => x !== it);
-  collected++;
-  await playAction(kind === 'star' ? 'pickup' : 'point', kind === 'star' ? 1500 : 1600);
-  if (items.length === 0 && portal) {
-    setText('#goal', { en: 'Step into the next painting', zh: '走进下一幅画' });
-    tween(1400, (t) => { const s = Math.max(0.001, ease(t)); portal.root.setLocalScale(s, s, s); });
-    portal.appear = 1;
-  } else if (kind === 'star') {
-    setText('#goal', { en: `Gather the three fallen stars · ${collected}/3`, zh: `收集三颗掉落的星星 · ${collected}/3` });
-  }
-  busy = false;
+// 转过身：字幕“这一面，他从没画过”，下一幅画的画框出现在画家身后
+async function onTurned() {
+  turned = true;
+  setText('#quote', { en: REVEAL.en, zh: REVEAL.zh, src: '' });
+  show('#quote', true);
+  setTimeout(() => show('#quote', false), 3500);
+  const next = LEVELS.find((l) => l.id === level.next);
+  const p = camMode === 'fp' ? { x: fp.x, z: fp.z } : character.getPosition(), back = dir((level.yaw0 ?? 0) + 180);
+  // 沿身后方向找一个能走到的位置放画框
+  let dist = 2.2;
+  while (dist > 0.9 && !walkable(p.x + back[0] * dist, p.z + back[1] * dist)) dist -= 0.2;
+  const pos = [p.x + back[0] * dist, 0, p.z + back[1] * dist];
+  portal = await makePortal({ pos, yaw: (level.yaw0 ?? 0) + 180 }, next);
+  tween(1400, (t) => { const s = Math.max(0.001, ease(t)); portal.root.setLocalScale(s, s, s); });
+  portal.appear = 1;
+  setText('#goal', NEXT_GOAL);
 }
 
 async function goNext() {
@@ -310,7 +349,7 @@ async function goNext() {
   $('#fade').classList.remove('dark');
   $('#fade').style.opacity = 1;
   await wait(1300);
-  const next = LEVELS.find((l) => l.id === level.portal.next);
+  const next = LEVELS.find((l) => l.id === level.next);
   await loadLevel(next);
   await intro(next);
   busy = false;
@@ -322,13 +361,14 @@ async function ending() {
   show('#goal', false);
   show('#quote', false);
   const p = character.getPosition();
-  birds = await spawnCrows([p.x, 0, p.z - 1.6]);
+  const fwd = dir(level.yaw0 ?? 0);
+  birds = await spawnCrows([p.x + fwd[0] * 3.5, 0, p.z + fwd[1] * 3.5]);
   character.crossfadeTo('idle', { duration: 0.3, loop: true });
   camMode = 'cine';
   const y0 = cam.yaw, h0 = cam.height, d0 = cam.distance, p0 = cam.pitch;
   await tween(7000, (t) => {
     const k = ease(t);
-    cam.yaw = lerp(y0, 0, k);
+    cam.yaw = lerp(y0, level.yaw0 ?? 0, k);
     cam.height = lerp(h0, 1.25, k);
     cam.distance = lerp(d0, 2.4, k);
     cam.pitch = lerp(p0, -6, k);
@@ -364,7 +404,8 @@ function clampCamera(dt) {
 // ---------- 每帧 ----------
 let last = { x: 0, z: 0 };
 app.on('update', (dt) => {
-  if (controlsOn && !busy) {
+  if (camMode === 'fp' && controlsOn && !busy) updateFp(dt);
+  if (controlsOn && !busy && camMode !== 'fp') {
     const before = character.getPosition();
     last = { x: before.x, z: before.z };
     ctrl.update(dt, cam.yaw);
@@ -379,18 +420,20 @@ app.on('update', (dt) => {
   if (camMode === 'play' || camMode === 'cine') cam.update(dt);
   if (camMode === 'play') clampCamera(dt);
 
-  const pos = character.getPosition();
-  for (const it of items) {
-    it.t += dt;
-    it.root.setPosition(it.base[0], it.base[1] + Math.sin(it.t * 2) * 0.06, it.base[2]);
-    const s = 0.36 * (1 + 0.15 * Math.sin(it.t * 3));
-    if (!busy) it.halo.setLocalScale(s, s, s);
-    if (!busy && controlsOn && Math.hypot(pos.x - it.base[0], pos.z - it.base[2]) < it.cfg.reach) onCollect(it);
-  }
-  if (portal && portal.appear && !busy && controlsOn && Math.hypot(pos.x - portal.pos[0], pos.z - portal.pos[2]) < 0.9) goNext();
+  clock += dt;
+  if (living) living.time(clock);
+  if (sparks) sparks.update(true, clock, camEntity);
+  const pos = camMode === 'fp' ? { x: fp.x, z: fp.z } : character.getPosition();
   if (level && !busy && controlsOn) {
-    const hz = level.items.find((it) => it.kind === 'horizon');
-    if (hz && Math.hypot(pos.x - hz.pos[0], pos.z - hz.pos[2]) < hz.reach) ending();
+    // 镜头朝向和原画方向差超过 140°，就算“转过身了”
+    const viewYaw = camMode === 'fp' ? fp.yaw : cam.yaw;
+    const diff = Math.abs((((viewYaw - (level.yaw0 ?? 0)) % 360) + 540) % 360 - 180);
+    if (level.next && !turned && diff > 140) onTurned();
+    if (portal && portal.appear && Math.hypot(pos.x - portal.pos[0], pos.z - portal.pos[2]) < 0.9) goNext();
+    if (!level.next) {
+      const h = dir(level.yaw0 ?? 0), along = pos.x * h[0] + pos.z * h[1];
+      if (along > level.horizon) ending();
+    }
   }
   const cp = camEntity.getPosition();
   for (const b of birds) {
@@ -409,9 +452,10 @@ window.cine = {
   async reveal(ms = 5000, to = 180, pitchEnd = 0) {
     camMode = 'manual'; controlsOn = false;
     camEntity.setPosition(0, EYE, 0);
-    await tween(ms, (t) => camEntity.setEulerAngles(pitchEnd * ease(t), to * ease(t), 0));
+    const y0 = level?.yaw0 ?? 0;
+    await tween(ms, (t) => camEntity.setEulerAngles(pitchEnd * ease(t), y0 + to * ease(t), 0));
   },
-  props(on) { for (const it of items) it.root.enabled = on; if (portal) portal.root.enabled = on; },
+  props(on) { if (portal) portal.root.enabled = on; },
   // 绕角色转一圈
   async orbit(ms = 9000, deg = 360) {
     camMode = 'cine'; controlsOn = false;
@@ -442,11 +486,13 @@ window.rec = {
     });
   },
 };
-window.__game = { scene, character, cam, ctrl, get env() { return env; }, get level() { return level; }, walkable, makeOrb, pc };
+window.__game = { scene, character, cam, ctrl, fp, get env() { return env; }, get level() { return level; }, get turned() { return turned; }, walkable, pc };
 
 // ---------- 开始 ----------
-const startId = q.get('level') || 'bedroom';
+const startId = q.get('level') || 'starry';
 const first = LEVELS.find((l) => l.id === startId) || LEVELS[0];
+// 调试：?scene=&ground=&scale= 临时替换当前关的场景，用来对比不同版本
+if (q.get('scene')) Object.assign(first, { scene: q.get('scene'), ground: +q.get('ground'), scale: +q.get('scale') });
 $('#loading').textContent = 'Walk Into Van Gogh';
 await loadLevel(first);
 await intro(first);

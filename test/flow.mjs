@@ -1,18 +1,22 @@
-// 三关完整流程：把角色送到每个目标点，检查收集、传送门、转场和结尾
+// 四关完整流程：每关模拟“转身”→ 画框出现 → 走进画框；最后一关朝地平线走到结尾
 // 用法：先 npm run dev，再 npm run test:flow（截图在 test/shots/）
 export default async ({ page, shot, run, wait }) => {
   const base = process.env.URL || 'http://localhost:5188/';
   await page.goto(base, { waitUntil: 'load' });
-  await wait(13000);
-  const st = () => run(() => { const p = __game.character.getPosition(); return JSON.stringify({ level: __game.level.id, x: +p.x.toFixed(2), z: +p.z.toFixed(2), goal: document.querySelector('#goal .en').textContent }); });
-  const to = async (x, z, ms) => { await run((x, z) => __game.character.setPosition(x, 0, z), x, z); await wait(ms); };
-  console.log('start ', await st()); await shot('01_bedroom');
-  await to(-0.6, 1.45, 3000); console.log('hat   ', await st());
-  await to(1.0, 0.0, 14000); console.log('cafe  ', await st()); await shot('02_cafe');
-  await to(2.5, 1.2, 2400); await to(-3.5, 3.4, 2400); await to(0.6, 3.2, 2400); console.log('stars ', await st());
-  await to(0.2, -3.2, 15000); console.log('wheat ', await st()); await shot('03_wheat');
-  await to(0.3, -3.0, 5000); await shot('04_crows');
-  await wait(6000); await shot('05_end');
+  await wait(14000);
+  const st = () => run(() => { const g = __game, p = g.character.getPosition(); return JSON.stringify({ level: g.level.id, turned: g.turned, x: +p.x.toFixed(2), z: +p.z.toFixed(2), goal: document.querySelector('#goal .en').textContent }); });
+  for (const id of ['starry', 'cafe', 'rhone']) {
+    console.log('arrive', await st()); await shot('n_' + id + '_front');
+    await run(() => { const g = __game, y = (g.level.yaw0 || 0) + 180; if (g.level.firstPerson) g.fp.yaw = y; else g.cam.yaw = y; });
+    await wait(2500); await shot('n_' + id + '_back');
+    console.log('turned', await st());
+    const pp = await run(() => { const r = __game.scene.contentRoot.findByName('portal'); const p = r.getPosition(); return [p.x, p.z]; });
+    await run((x, z) => { const g = __game; if (g.level.firstPerson) { g.fp.x = x; g.fp.z = z; } else g.character.setPosition(x, 0, z); }, pp[0], pp[1]);
+    await wait(15000);
+  }
+  console.log('arrive', await st()); await shot('n_wheat_front');
+  await run(() => __game.character.setPosition(0.1, 0, -3.1)); await wait(5000); await shot('n_wheat_crows');
+  await wait(6000); await shot('n_end');
   const ended = await run(() => getComputedStyle(document.querySelector('#end')).opacity);
-  console.log(ended === '1' ? 'PASS 走完三关并看到结尾' : 'FAIL 没有到达结尾');
+  console.log(ended === '1' ? 'PASS 走完四关并看到结尾' : 'FAIL 没有到达结尾');
 };

@@ -19,4 +19,6 @@ const saveRecording = {
 };
 
 // base './'：打包后的站点可以放在任意子路径下（比如 GitHub Pages 的 /仓库名/）
-export default { base: './', server: { port: 5188 }, build: { target: 'es2022' }, plugins: [saveRecording] };
+// FILM=1 时把成片页 film.html 也打包（只在本地渲染用，不进线上部署）
+const input = process.env.FILM ? { main: 'index.html', film: 'film.html' } : { main: 'index.html' };
+export default { base: './', server: { port: 5188 }, build: { target: 'es2022', outDir: process.env.FILM ? 'dist-film' : 'dist', rollupOptions: { input } }, plugins: [saveRecording] };
