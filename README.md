@@ -17,7 +17,7 @@ WASD to walk · click, then move the mouse to look · turn around to find the ne
 
 No modelling, no rigging, no Blender.
 
-1. **Worlds (Viggle JST 2):** each painting went to `generate_environment` through the PINOC MCP, together with a short art-direction prompt and `quality: "high"`. One image, about a minute, 5–11 credits. JST 2 builds real 3D Gaussian splats, so the other half is there when you turn around.
+1. **Worlds (Viggle JST 2):** each painting went to `generate_environment` through the PINOC MCP, together with a short art-direction prompt and `quality: "high"`. One image, a minute or two, 5–11 credits. JST 2 builds real 3D Gaussian splats, so the other half is there when you turn around.
 2. **Vincent (Viggle JST 2):** `generate_character` from one sentence, already rigged; walk and idle come from the free PINOC motion library.
 3. **Code (Claude Code):** everything that moves or glows is code layered on top of the splats.
    - `src/living.js` rewrites the splat shader so every brushstroke drifts along its own direction, the Starry Night vortices spin and the wheat sways.
@@ -58,7 +58,7 @@ npm run test:flow               # headless Chrome plays all four paintings
 梵高每一幅画，都只画了眼前的那一半。这里把他的四幅画变成可以走进去的世界，转过身，就能看到他从来没画过的另一半：《星月夜》头顶的漩涡在转，咖啡馆身后是亮着路灯的星空街道，罗纳河对岸的小镇亮着窗，最后是 1890 年 7 月的麦田。
 
 **怎么做的：**
-- **世界和角色（Viggle JST 2）：** 每幅画加一句美术方向描述，通过 PINOC MCP 一分钟生成一个真 3D 的高斯泼溅世界；梵高一句话生成，自带骨骼，动作用免费动作库。
+- **世界和角色（Viggle JST 2）：** 每幅画加一句美术方向描述，通过 PINOC MCP 生成一个高斯泼溅的真 3D 场景（一两分钟）；梵高这个角色用文字描述生成，自带骨骼，动作用免费动作库。
 - **代码（Claude Code）：** 改泼溅着色器让笔触流动、漩涡旋转、麦浪起伏；给梵高加油画质感；加光尘、灯火、水面光点；碰撞直接从点云算。
 
 **自己做一个：** 让你的 agent 读 [`CLAUDE.md`](CLAUDE.md)，里面有从“一张画”到“一关”的完整流程和我们踩过的所有坑。
