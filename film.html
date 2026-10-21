@@ -26,6 +26,10 @@
   #how .top { font-family: "Noto Serif SC", serif; font-weight: 700; font-size: 3.2vw; letter-spacing: .1em; }
   #how .top b { color: var(--gold); font-weight: 700; }
   #how .bot { font-family: system-ui, sans-serif; font-size: 1.25vw; letter-spacing: .2em; opacity: .85; }
+  #inset { inset: auto; top: 4.5vh; left: 3vw; opacity: 0; text-align: center; }
+  #inset .img { width: 14vw; height: 11vw; background: center / cover no-repeat; outline: 1px solid rgba(232,194,106,.85); outline-offset: .35vw; box-shadow: 0 .6vw 2.4vw rgba(0,0,0,.6); }
+  #inset .lb { font-family: "Noto Serif SC", serif; font-size: 1.05vw; letter-spacing: .25em; color: var(--gold); margin-top: 1.1vw; text-shadow: 0 1px 10px rgba(0,0,0,.9); }
+  #inset .lb2 { font-family: "Cormorant Garamond", serif; font-style: italic; font-size: .95vw; opacity: .8; margin-top: .3vw; text-shadow: 0 1px 10px rgba(0,0,0,.9); }
   #end { padding: 0 10vw; }
   #end .q { font-family: "Noto Serif SC", serif; font-size: 2.8vw; line-height: 1.6; letter-spacing: .08em; }
   #end .qen { font-family: "Cormorant Garamond", serif; font-style: italic; font-size: 1.8vw; margin-top: 1vw; opacity: .8; }
@@ -38,6 +42,7 @@
 <body>
 <canvas id="c"></canvas>
 <div id="painting" class="layer"></div>
+<div id="inset" class="layer"><div class="img"></div><div class="lb">原画 · 喂给 JST 2 的参考图</div><div class="lb2">the reference image given to Viggle JST 2</div></div>
 <div id="black" class="layer"></div>
 <div id="cap" class="layer"><div class="zh"></div><div class="en"></div></div>
 <div id="title" class="layer card">
@@ -46,7 +51,7 @@
   <div class="sub">四幅画，和他没画完的另一半</div>
 </div>
 <div id="how" class="layer card">
-  <div class="top">一张画 · <b>一分钟</b> · 一个能走进去的世界</div>
+  <div class="top">一张画 · <b>一次调用</b> · 一个能走进去的世界</div>
   <div class="bot">VIGGLE JST 2 · PINOC MCP · CLAUDE CODE</div>
 </div>
 <div id="end" class="layer card">

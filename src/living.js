@@ -1,6 +1,7 @@
 // 让泼溅场景“活”起来：改 PlayCanvas 的工作缓冲着色器
 // 1) 每个笔触沿自己的长轴来回滑动（天空幅度大、地面小），整幅画像在流动
 // 2) 天空里若干漩涡绕中心旋转，越靠里转得越快
+// 3) 压平：沿视线把每个点挪到同一张画布平面上，从画家的眼睛看过去画面不变；松开时近处先“鼓”出来
 import { ENV_WORK_BUFFER_MODIFIER_GLSL } from '@viggle/splat-engine';
 
 const CENTER_FN = `void modifySplatCenter(inout vec3 center) {
@@ -21,6 +22,10 @@ uniform vec4 uVort2;
 uniform vec4 uVort3;
 uniform vec4 uSpin;
 uniform float uWave;
+uniform float uFlat;
+uniform vec3 uFlatFwd;
+uniform float uFlatD;
+float lvFlatRatio = 1.0;
 
 vec3 lvQrot(vec4 q, vec3 v) { return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v); }
 
@@ -62,10 +67,23 @@ void modifySplatCenter(inout vec3 center) {
         center.x += uWave * h * w;
         center.z += uWave * 0.4 * h * w;
     }
+    // 4) 压平到画布：同一条视线上挪动，泼溅大小按距离同比缩放，所以从眼睛看画面不变
+    lvFlatRatio = 1.0;
+    if (uFlat > 0.0) {
+        vec3 d4 = center - uEye;
+        float len4 = length(d4), z4 = dot(d4, uFlatFwd);
+        if (z4 > 0.2 * len4) {
+            float f = 1.0 - smoothstep(0.0, 1.0, (1.0 - uFlat) * 1.6 - 0.6 * clamp(len4 / 40.0, 0.0, 1.0));
+            vec3 p4 = mix(center, uEye + d4 * (uFlatD / z4), f);
+            lvFlatRatio = length(p4 - uEye) / max(len4, 1e-3);
+            center = p4;
+        }
+    }
 }`;
 
-export const LIVING_GLSL = ENV_WORK_BUFFER_MODIFIER_GLSL.replace(CENTER_FN, LIVING);
-if (LIVING_GLSL === ENV_WORK_BUFFER_MODIFIER_GLSL) console.warn('living: 没找到 modifySplatCenter，着色器未替换');
+const SCALE_END = 'scale *= 1.0 - along * above;';
+export const LIVING_GLSL = ENV_WORK_BUFFER_MODIFIER_GLSL.replace(CENTER_FN, LIVING).replace(SCALE_END, SCALE_END + '\n    scale *= lvFlatRatio;');
+if (!LIVING_GLSL.includes('lvFlatRatio;')) console.warn('living: 着色器替换不完整');
 
 // 方向：pitch 向上为正、yaw 与相机 setEulerAngles 一致（0 = 朝 -Z 原画方向）
 export function dirFrom(pitchDeg, yawDeg) {
@@ -90,5 +108,13 @@ export function makeLiving(env, { eye, scale, flow = 0.12, vortices = [], wave =
   set('uSpin', spin);
   set('uWave', wave);
   set('uTime', 0);
-  return { time(t) { set('uTime', t); }, flow(f) { set('uFlow', f); } };
+  set('uFlat', 0);
+  set('uFlatFwd', [0, 0, -1]);
+  set('uFlatD', 10);
+  return {
+    time(t) { set('uTime', t); },
+    flow(f) { set('uFlow', f); },
+    // k: 1 = 整个世界压成一张画布（距离 d 米，朝向 yaw），0 = 完全立体
+    flat(k, yaw = 0, d = 10) { set('uFlat', k); set('uFlatFwd', dirFrom(0, yaw)); set('uFlatD', d); },
+  };
 }
