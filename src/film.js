@@ -311,7 +311,7 @@ function frame(t) {
     fxScene = 'rhone';
     caption('“看着星星，我总会做梦。”', 'The sight of the stars always makes me dream. — to Theo, 1888', fade(t, t0 + 1.0, T.rhoneEnd - 0.4, 0.6));
   } else if (t < T.howEnd) {
-    // E. 怎么做的：每幅画一闪 → 一次调用后它是一个能走进去的世界
+    // E. 怎么做的：每幅画一闪，变成一个能走进去的世界
     const t0 = T.rhoneEnd, order = ['starry', 'cafe', 'rhone', 'wheat'];
     const k = Math.min(3, Math.floor((t - t0 - 0.6) / 2.2));
     card('#how', fade(t, t0 + 0.1, T.howEnd - 0.2, 0.4));

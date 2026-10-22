@@ -6,8 +6,9 @@ import { execFileSync } from 'node:child_process';
 const fps = Number(process.argv[2] || 30), W = Number(process.argv[3] || 1920), H = Number(process.argv[4] || 1080);
 const SS = Number(process.env.SS || 1); // 超采样倍数：按 W*SS x H*SS 渲染，再缩回 W x H
 const dir = 'recordings/film_frames';
-// RESUME=1：保留已渲染的帧，从下一帧接着渲染
-if (!process.env.RESUME) fs.rmSync(dir, { recursive: true, force: true });
+// RESUME=1：保留已渲染的帧，从下一帧接着渲染；FROM/TO：只重渲这一段帧（保留其余帧）
+const FROM = process.env.FROM ? Number(process.env.FROM) : null;
+if (!process.env.RESUME && FROM === null) fs.rmSync(dir, { recursive: true, force: true });
 fs.mkdirSync(dir, { recursive: true });
 const startAt = process.env.RESUME ? fs.readdirSync(dir).filter((f) => f.endsWith('.png')).length : 0;
 const browser = await puppeteer.launch({
@@ -31,7 +32,8 @@ for (const t of [0, dur * 0.5, 0]) { await page.evaluate((t, still) => still ? w
 const t0 = Date.now();
 const CHUNK = Number(process.env.CHUNK || 1e9); // 每次最多渲染多少帧，之后退出，由外层循环重开浏览器
 let rendered = 0;
-for (let i = Math.max(0, startAt - 1); i < n && rendered < CHUNK; i++, rendered++) {
+const to = process.env.TO ? Math.min(n, Number(process.env.TO)) : n;
+for (let i = FROM ?? Math.max(0, startAt - 1); i < to && rendered < CHUNK; i++, rendered++) {
   await page.evaluate((t, still) => still ? window.film.still(t, ...still) : window.film.frame(t), i / fps, STILL);
   await settle();
   await page.screenshot({ path: `${dir}/${String(i).padStart(5, '0')}.png` });
